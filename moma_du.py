@@ -5,7 +5,7 @@ import datetime
 
 import importlib
 importlib.reload(mf)
-
+́
 # MoMA Visitors ===========================================================================
 moma_visitors = pandas.read_csv('data/visits/MoMA_visitors.csv')
 
@@ -21,14 +21,6 @@ mf.plot_visitors(moma_visitors)
 # MoMA GA ===========================================================================
 pandas.set_option('display.max_columns', 20)
 
-ga_bo_us = mf.read_ga_data('data/ga/moma_both_nony_nochn.tsv')
-
-ga_bo_test = mf.read_ga_data('data/ga/moma_both_all_nochn_test.tsv')
-
-ga_bo_test.head(10)
-ga_bo_test.tail(10)
-
-
 
 ga_bo = mf.read_ga_data('data/ga/moma_both_all_nochn.tsv')
 ga_bo_os = mf.read_ga_data('data/ga/moma_both_nousa_nochn.tsv')
@@ -42,7 +34,7 @@ ga_bo_chn_us = mf.read_ga_data('data/ga/moma_both_usa_chn.tsv', channels=True)
 ga_bo_chn_do = mf.read_ga_data('data/ga/moma_both_nony_chn.tsv', channels=True)
 ga_bo_chn_lo = mf.read_ga_data('data/ga/moma_both_ny_chn.tsv', channels=True)
 
-ga_bo_lo.head(10)
+ga_bo_chn.head(30)
 
 
 ga_vi = mf.read_ga_data('data/ga/moma_visit_all_nochn.tsv')

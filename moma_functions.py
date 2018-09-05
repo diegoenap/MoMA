@@ -13,7 +13,7 @@ def complete_dates(data, channels):
     d1 = data.loc[0, 'date2']
     d2 = data.loc[data.shape[0] - 1, 'date2']
     diff = d2 - d1
-    if ~channels:
+    if not channels:
         if data.shape[0] != diff.days + 1:
             print('Some dates are missing!')
             # Create a complete sequence of dates
@@ -42,13 +42,59 @@ def complete_dates(data, channels):
                     j += 1
             # Append the nissing rows to the original dataset and sort again
             data = data.append(tmpdf, ignore_index=True)
-            return data.sort_values(by='date2', ascending=True)
+            return data.sort_values(by='date2', ascending=True).reset_index(drop=True)
         else:
             print('Complete dates')
-            return data
+            return data.reset_index(drop=True)
     else:
         print('Dataset with Channel info')
-        return data
+        print(data.shape)
+        print(diff.days + 1)
+        data.sort_values(by=['date2', 'channel'], inplace=True)
+        channel_names = ['(Other)', 'Direct', 'Display', 'Email', 'Organic Search', 'Paid Search', 'Referral', 'Social']
+        if data.shape[0] != (diff.days + 1) * len(channel_names):
+            print('Some dates are missing!')
+            # Create a complete sequence of dates
+            step = dt.timedelta(days=1)
+            dateseq = []
+            while d1 <= d2:
+                dateseq.append(d1)
+                d1 += step
+            # Check for missing dates and create a temporal dataframe (tmpdf) with the missing rows, filled with 0's.
+            # Then, append tmpdf to the original dataset
+            i = 0
+            j = 0
+            tmpdf = pandas.DataFrame()
+            col_list = ['date', 'channel', 'users', 'usersNew', 'percentNewSessions', 'sessions', 'bounceRate',
+                        'avgSessionDuration',
+                        'pageviews', 'pageviewsPerSession', 'uniquePageviews', 'avgTimeOnPage', 'usersOld',
+                        'sessionsNew',
+                        'sessionsOld', 'sessionsBounce', 'sessionsNoBounce', 'date2']
+            while j < len(dateseq):
+                k = 0
+                #print('Checking channels...')
+                while k < len(channel_names):
+                    if i < data.shape[0] and data.loc[i, 'date2'] == dateseq[j] and data.loc[i, 'channel'] == channel_names[k]:
+                        #print('Channel FOUND: {} i: {} k: {}'.format(channel_names[k], i, k))
+                        i += 1
+                        k += 1
+                    else:
+                        # Add missing row
+                        #print('Channel missing: {} i: {} k: {}'.format(channel_names[k], i, k))
+                        missrow = pandas.DataFrame(
+                            [[int(dateseq[j].strftime('%Y%m%d')), channel_names[k], 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+                              0, 0, 0, 0, 0, dateseq[j]]],
+                            columns=col_list)
+                        tmpdf = tmpdf.append(missrow, ignore_index=True)
+                        k += 1
+                #print('Increase j')
+                j += 1
+            # Append the nissing rows to the original dataset and sort again
+            data = data.append(tmpdf, ignore_index=True)
+            return data.sort_values(by=['date2', 'channel'], ascending=True).reset_index(drop=True)
+        else:
+            print('Complete dates')
+            return data.reset_index(drop=True)
 
 
 def read_ga_data(filename, channels=False):
