@@ -5,6 +5,13 @@ import datetime as dt
 
 # Read datasets functions
 
+def read_visitors_data(filename):
+    """Read venue visitors dataset"""
+    data = pandas.read_csv(filename)
+    # Create date object column and sort the dataframe by date
+    data['date2'] = [dt.datetime.strptime(d, '%d/%m/%y') for d in data['Date'].astype('str')]
+    return data.sort_values(by='date2', ascending=True).reset_index(drop=True)
+
 
 def complete_dates(data, channels):
     """Complete the missing dates with null values"""
@@ -151,3 +158,20 @@ def plot_gametrics(dataset, metricname):
     plt.ylabel(metricname)
     plt.grid(True)
     plt.show()
+
+
+# Correlation test functions
+
+def get_correlation_matrix(visitors, gametrics):
+    """Returns a matrix where row are the GA metrics and the column are the correlation value at each lag point
+    (from 0 to maxlag). It keeps the Visitors dataset fixed and try different lags going backwards with the GA metrics,
+    that is why GA metrics dataset should be larger. The diference in day between both datasets is considered as the
+    lag."""
+
+    # Validations
+    # print("Visitors:")
+    # print(visitors.head())
+    # print("GA Metrics:")
+    # print(gametrics.head())
+
+
