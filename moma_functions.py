@@ -1,4 +1,5 @@
 import pandas
+import numpy
 import matplotlib.pyplot as plt
 import matplotlib.dates as mdates
 import datetime as dt
@@ -162,16 +163,16 @@ def plot_gametrics(dataset, metricname):
 
 # Correlation test functions
 
-def get_correlation_matrix(visitors, gametrics):
+def get_correlation_matrix(vsdf, gadf):
     """Returns a matrix where row are the GA metrics and the column are the correlation value at each lag point
     (from 0 to maxlag). It keeps the Visitors dataset fixed and try different lags going backwards with the GA metrics,
     that is why GA metrics dataset should be larger. The diference in day between both datasets is considered as the
     lag."""
-
-    # Validations
-    # print("Visitors:")
-    # print(visitors.head())
-    # print("GA Metrics:")
-    # print(gametrics.head())
+    a = vsdf.visitors
+    b = gadf.loc[:, 'users']
+    print(a.shape)
+    print(b.shape)
+    #c = numpy.corrcoef(vsdf.visitors, gadf.loc[:, 'Users'])
+    #return c
 
 
