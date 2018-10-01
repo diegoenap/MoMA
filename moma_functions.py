@@ -1,4 +1,4 @@
-import pandas
+import pandas as pd
 import numpy
 import matplotlib.pyplot as plt
 import matplotlib.dates as mdates
@@ -8,10 +8,12 @@ import datetime as dt
 
 def read_visitors_data(filename):
     """Read venue visitors dataset"""
-    data = pandas.read_csv(filename)
-    # Create date object column and sort the dataframe by date
-    data['date2'] = [dt.datetime.strptime(d, '%d/%m/%y') for d in data['Date'].astype('str')]
-    return data.sort_values(by='date2', ascending=True).reset_index(drop=True)
+    data = pd.read_csv(filename, parse_dates=['Date'], index_col='Date', dayfirst=True)
+    return data.asfreq('D', fill_value=0)
+    # data = pandas.read_csv(filename)
+    # # Create date object column and sort the dataframe by date
+    # data['date2'] = [dt.datetime.strptime(d, '%d/%m/%y') for d in data['Date'].astype('str')]
+    # return data.sort_values(by='date2', ascending=True).reset_index(drop=True)
 
 
 def complete_dates(data, channels):
@@ -20,6 +22,8 @@ def complete_dates(data, channels):
     data.sort_values(by='date2', ascending=True, inplace=True)
     d1 = data.loc[0, 'date2']
     d2 = data.loc[data.shape[0] - 1, 'date2']
+    # diff is the number of dates between the start and the end dates of the dataset. If diff is greater than the
+    # number of rows it means that there are missing dates
     diff = d2 - d1
     if not channels:
         if data.shape[0] != diff.days + 1:
@@ -34,7 +38,7 @@ def complete_dates(data, channels):
             # Then, append tmpdf to the original dataset
             i = 0
             j = 0
-            tmpdf = pandas.DataFrame()
+            tmpdf = pd.DataFrame()
             col_list = ['date', 'users', 'usersNew', 'percentNewSessions', 'sessions', 'bounceRate', 'avgSessionDuration',
                         'pageviews', 'pageviewsPerSession', 'uniquePageviews', 'avgTimeOnPage', 'usersOld', 'sessionsNew',
                         'sessionsOld', 'sessionsBounce', 'sessionsNoBounce', 'date2']
@@ -44,7 +48,7 @@ def complete_dates(data, channels):
                     j += 1
                 else:
                     # Add missing row
-                    missrow = pandas.DataFrame([[int(dateseq[j].strftime('%Y%m%d')), 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, dateseq[j]]],
+                    missrow = pd.DataFrame([[int(dateseq[j].strftime('%Y%m%d')), 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, dateseq[j]]],
                                                columns=col_list)
                     tmpdf = tmpdf.append(missrow, ignore_index=True)
                     j += 1
@@ -72,7 +76,7 @@ def complete_dates(data, channels):
             # Then, append tmpdf to the original dataset
             i = 0
             j = 0
-            tmpdf = pandas.DataFrame()
+            tmpdf = pd.DataFrame()
             col_list = ['date', 'channel', 'users', 'usersNew', 'percentNewSessions', 'sessions', 'bounceRate',
                         'avgSessionDuration',
                         'pageviews', 'pageviewsPerSession', 'uniquePageviews', 'avgTimeOnPage', 'usersOld',
@@ -89,7 +93,7 @@ def complete_dates(data, channels):
                     else:
                         # Add missing row
                         #print('Channel missing: {} i: {} k: {}'.format(channel_names[k], i, k))
-                        missrow = pandas.DataFrame(
+                        missrow = pd.DataFrame(
                             [[int(dateseq[j].strftime('%Y%m%d')), channel_names[k], 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
                               0, 0, 0, 0, 0, dateseq[j]]],
                             columns=col_list)
@@ -107,11 +111,8 @@ def complete_dates(data, channels):
 
 def read_ga_data(filename, channels=False):
     """Read Google Analytics datasets."""
-    print('Reading dataset...')
-    data = pandas.read_csv(filename, encoding='utf_16_le', sep='\t')
-    # Define better column names
-    data.rename(columns={'ga:date': 'date',
-                         'ga:users': 'users',
+    data = pd.read_csv(filename, encoding='utf_16_le', sep='\t', parse_dates=['ga:date'], index_col='ga:date', dayfirst=True)
+    data.rename(columns={'ga:users': 'users',
                          'ga:newUsers': 'usersNew',
                          'ga:percentNewSessions': 'percentNewSessions',
                          'ga:sessions': 'sessions',
@@ -123,6 +124,7 @@ def read_ga_data(filename, channels=False):
                          'ga:avgTimeOnPage': 'avgTimeOnPage'}, inplace=True)
     if channels:
         data.rename(columns={'ga:channelGrouping': 'channel'}, inplace=True)
+
     # Correct percentage
     data['percentNewSessions'] = data['percentNewSessions'] / 100
     data['bounceRate'] = data['bounceRate'] / 100
@@ -132,10 +134,53 @@ def read_ga_data(filename, channels=False):
     data['sessionsOld'] = data['sessions'] * (1 - data['percentNewSessions'])
     data['sessionsBounce'] = data['sessions'] * data['bounceRate']
     data['sessionsNoBounce'] = data['sessions'] * (1 - data['bounceRate'])
-    # Create date object column and sort the dataframe by date
-    data['date2'] = [dt.datetime.strptime(d, '%Y%m%d') for d in data['date'].astype('str')]
-    # Check and complete range of days if necessary.
-    data = complete_dates(data, channels)
+
+    # Complete the dataset
+    if channels:
+        # Create dataframes for each channel, complete separatetly and the append in one final dataset
+        print('Complete dataset with channel info')
+        channels = ['(Other)', 'Direct', 'Display', 'Email', 'Organic Search', 'Paid Search', 'Referral', 'Social']
+        tmp = pd.DataFrame()
+        for ch in channels:
+            tmp1 = data[data.channel == ch]
+            print(tmp1.shape)
+            tmp2 = tmp1.asfreq('D', fill_value=0)
+            pd.concat([tmp, tmp2])
+            print(tmp.shape)
+        data = tmp
+    else:
+        #
+        data = data.asfreq('D', fill_value=0)
+
+    # print('Reading dataset...')
+    # data = pandas.read_csv(filename, encoding='utf_16_le', sep='\t')
+    # # Define better column names
+    # data.rename(columns={'ga:date': 'date',
+    #                      'ga:users': 'users',
+    #                      'ga:newUsers': 'usersNew',
+    #                      'ga:percentNewSessions': 'percentNewSessions',
+    #                      'ga:sessions': 'sessions',
+    #                      'ga:bounceRate': 'bounceRate',
+    #                      'ga:avgSessionDuration': 'avgSessionDuration',
+    #                      'ga:pageviews': 'pageviews',
+    #                      'ga:pageviewsPerSession': 'pageviewsPerSession',
+    #                      'ga:uniquePageviews': 'uniquePageviews',
+    #                      'ga:avgTimeOnPage': 'avgTimeOnPage'}, inplace=True)
+    # if channels:
+    #     data.rename(columns={'ga:channelGrouping': 'channel'}, inplace=True)
+    # # Correct percentage
+    # data['percentNewSessions'] = data['percentNewSessions'] / 100
+    # data['bounceRate'] = data['bounceRate'] / 100
+    # # Derive new columns
+    # data['usersOld'] = data['users'] - data['usersNew']
+    # data['sessionsNew'] = data['sessions'] * data['percentNewSessions']
+    # data['sessionsOld'] = data['sessions'] * (1 - data['percentNewSessions'])
+    # data['sessionsBounce'] = data['sessions'] * data['bounceRate']
+    # data['sessionsNoBounce'] = data['sessions'] * (1 - data['bounceRate'])
+    # # Create date object column and sort the dataframe by date
+    # data['date2'] = [dt.datetime.strptime(d, '%Y%m%d') for d in data['date'].astype('str')]
+    # # Check and complete range of days if necessary.
+    # data = complete_dates(data, channels)
     return data
 
 
