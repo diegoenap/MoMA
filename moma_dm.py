@@ -1,11 +1,16 @@
 import moma_functions as mf
 import pandas
+import numpy as np
 
 
 def moma_analysis():
     # Read visitors dataset
     vsdf = mf.read_visitors_data('data/visits/MoMA_visitors.csv')
     gadf = mf.read_ga_data('data/ga/moma_both_all_nochn.tsv')
+    # print("Original date range for each dataset.")
+    # print("  Visitors: {} - {}".format(vsdf.index[0], vsdf.index[-1]))
+    # print("GA metrics: {} - {}".format(gadf.index[0], gadf.index[-1]))
+    # print("------------")
     # Limit the range of dates in the datasets. If the Visitors start date is smaller than the GA metrics start date, or
     # if it is between the 'maxlag' range, then use the GA metric start date. Otherwise the Initial date is the Visitors
     # start date minus the 'maxlag'.
@@ -19,9 +24,21 @@ def moma_analysis():
     # Limit the datasets with the new initial and end dates
     vsdf = vsdf[init_date + max_lag:end_date]
     gadf = gadf[str(init_date):str(end_date)]
+    # print("New datasets range.\nThe visitors dataset should start {} days after the GA metrics".format(max_lag.days))
+    # print("This is the space set to test each lag")
+    # print("  Visitors: {} - {}".format(vsdf.index[0], vsdf.index[-1]))
+    # print("GA metrics: {} - {}".format(gadf.index[0], gadf.index[-1]))
+    # print("------------")
+    print(vsdf.columns)
+    print(mf.can_apply_log(vsdf))
+
 
     # Get correlation matrix
-    mf.get_correlation_matrix(vsdf, gadf)
+    # corrs = mf.get_correlations_matrix(vsdf, gadf, max_lag.days)
+    # max_corrs = mf.get_max_correlations(corrs)
+    # print(max_corrs)
+    test_table = mf.run_correlation_tests(vsdf, gadf, max_lag.days, 'Test ALL-DO')
+    #print(test_table)
 
     # # Limit the datasets
     # if (vsdf.date2.iloc[0] - gadf.date2.iloc[0]) <= max_lag:

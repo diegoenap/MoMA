@@ -223,17 +223,109 @@ def plot_gametrics(dataset, metricname):
 
 # Correlation test functions
 
-def get_correlation_matrix(vsdf, gadf):
-    """Returns a matrix where row are the GA metrics and the column are the correlation value at each lag point
+metric_list = ['users', 'usersNew', 'usersOld', 'sessions', 'sessionsNew', 'sessionsOld', 'sessionsBounce',
+               'sessionsNoBounce', 'avgSessionDuration', 'pageviews', 'pageviewsPerSession', 'uniquePageviews',
+               'avgTimeOnPage']
+
+def get_correlations_matrix(vsdf, gadf, maxlag):
+    """
+    Returns a matrix where the rows are the GA metrics and the column are the correlation value at each lag point
     (from 0 to maxlag). It keeps the Visitors dataset fixed and try different lags going backwards with the GA metrics,
-    that is why GA metrics dataset should be larger. The diference in day between both datasets is considered as the
-    lag."""
-    a = vsdf['2017-01'].visitors
-    b = gadf['2017-01'].users
-    print(a.shape)
-    print(b.shape)
-    print(a.corr(b, method='pearson'))
-    #c = numpy.corrcoef(vsdf.visitors, gadf.loc[:, 'Users'])
-    #return c
+    that is why GA metrics dataset should be larger (it starts before). The difference in days between both datasets is
+    considered as the lag.
+    """
+    # For each metric in GA metrics
+    corr_dict = dict()
+    # print(vsdf.shape)
+    # print(vsdf.index[0])
+    # print(vsdf.index[-1])
+    for metric in metric_list:
+        gametric = gadf[metric]
+        corr_list = []
+        # For each lag
+        for lag in range(0, maxlag+1):
+            # Set range dates based on lag, lag 0 means GA metrics have the same dates as Visitors
+            inilag = maxlag - lag
+            endlag = -(lag)
+            #print(lag)
+            #endlag = -(maxlag-lag)
+            # Get the correlation for each lag and store it in a list
+            if endlag:
+                # print(gametric[inilag:endlag].shape)
+                # print(gametric[inilag:endlag].index[0])
+                # print(gametric[inilag:endlag].index[-1])
+                # print(vsdf.visitors.corr(gametric[inilag:endlag], method='pearson'))
+                corr_list.append(vsdf.visitors.corr(gametric[lag:endlag], method='pearson'))
+            else:
+                # print(gametric[inilag:].shape)
+                # print(gametric[inilag:].index[0])
+                # print(gametric[inilag:].index[-1])
+                # print(vsdf.visitors.corr(gametric[inilag:], method='pearson'))
+                corr_list.append(vsdf.visitors.corr(gametric[lag:], method='pearson'))
+        # print(len(corr_list))
+        corr_dict[metric] = corr_list
+        # break
+    return corr_dict
+
+
+def get_max_correlations(corrs_matrix):
+    """
+    Takes a correlation matrix and returns a table with the maximum correlation value for each GA metric along with the
+    the corresponding lag
+    :param corrs_matrix: Dictionary where the indexes are the metrics pointing to lists of correlations
+    :return:
+    """
+    # corr_dict = dict()
+    # for metric in metric_list:
+    #     max_corr = max(corrs_matrix[metric])
+    #     # print("Metric: {}\n  Max corr: {}\n  Lag: {}".format(metric, max_corr, corrs_matrix[metric].index(max_corr)))
+    #     corr_dict[metric] = [max_corr, corrs_matrix[metric].index(max_corr)]
+    # return corr_dict
+    tmp = pd.DataFrame(columns=['metric', 'corr', 'lag'])
+    for metric in metric_list:
+        max_corr = max(corrs_matrix[metric])
+        tmp = tmp.append(pd.DataFrame({'metric': [metric], 'corr': [max_corr], 'lag': [corrs_matrix[metric].index(max_corr)]}))
+    return tmp.reset_index(drop=True)
+
+
+def moving_average(df, window = 7):
+    """
+    Calculates the moving average given the window. In case of GA metrics, it assumes that the dataset is already
+    filtered by Channel.
+    :param df: Visitors or GA metrics (already filtered by Channel)
+    :param window: Number of dates to calculate the moving avergae
+    :return: A dataframe with the moving average values
+    """
+    return df.rolling(window).mean().dropna()
+
+
+def can_apply_log(df):
+    if 'visitors' in df.columns:
+        return len(df[df.visitors == 0]) == 0
+    else:
+        for metric in metric_list:
+            len(df[df.loc[metric] == 0]) == 0
+
+
+def run_correlation_tests(vsdf, gadf, maxlag, dataname):
+    """
+    Runs the get_correlation methods to different transformations of the original datasets.
+    :param vsdf: Visitors dataset
+    :param gadf: GA metrics dataset
+    :param maxlag:
+    :return:
+    """
+    tmp = pd.DataFrame(columns=['metric', 'corr', 'lag', 'dataname'])
+    # 1) Unchanged Visitors & Unchanged GA
+    max_corrs = get_max_correlations(get_correlations_matrix(vsdf, gadf, maxlag))
+    max_corrs['dataname'] = dataname
+    tmp = tmp.append(max_corrs)
+    # 2) Unchanged Visitors & Log GA
+
+    # 3) Unchanged Visitors & Moving average GA
+    # 4) Unchanged Visitors & Moving average Log GA
+    # 5) Moving average Visitors & Moving average GA
+    # 6) Moving average Visitors & Moving average Log GA
+    return tmp
 
 
