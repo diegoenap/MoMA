@@ -2,7 +2,14 @@ import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
 import matplotlib.dates as mdates
-import datetime as dt
+import math
+# import datetime as dt
+
+metric_list = ['users', 'usersNew', 'usersOld', 'sessions', 'sessionsNew', 'sessionsOld', 'sessionsBounce',
+               'sessionsNoBounce', 'avgSessionDuration', 'pageviews', 'pageviewsPerSession', 'uniquePageviews',
+               'avgTimeOnPage']
+
+channels = ['(Other)', 'Direct', 'Display', 'Email', 'Organic Search', 'Paid Search', 'Referral', 'Social']
 
 # Read datasets functions
 
@@ -11,103 +18,6 @@ def read_visitors_data(filename):
     print("Reading", filename)
     data = pd.read_csv(filename, parse_dates=['Date'], index_col='Date', dayfirst=True)
     return data.asfreq('D', fill_value=0)
-    # data = pandas.read_csv(filename)
-    # # Create date object column and sort the dataframe by date
-    # data['date2'] = [dt.datetime.strptime(d, '%d/%m/%y') for d in data['Date'].astype('str')]
-    # return data.sort_values(by='date2', ascending=True).reset_index(drop=True)
-
-
-# def complete_dates(data, channels):
-#     """Complete the missing dates with null values"""
-#     # Sort the dataframe by date to get the initial and final date and the difference in days
-#     data.sort_values(by='date2', ascending=True, inplace=True)
-#     d1 = data.loc[0, 'date2']
-#     d2 = data.loc[data.shape[0] - 1, 'date2']
-#     # diff is the number of dates between the start and the end dates of the dataset. If diff is greater than the
-#     # number of rows it means that there are missing dates
-#     diff = d2 - d1
-#     if not channels:
-#         if data.shape[0] != diff.days + 1:
-#             print('Some dates are missing!')
-#             # Create a complete sequence of dates
-#             step = dt.timedelta(days=1)
-#             dateseq = []
-#             while d1 <= d2:
-#                 dateseq.append(d1)
-#                 d1 += step
-#             # Check for missing dates and create a temporal dataframe (tmpdf) with the missing rows, filled with 0's.
-#             # Then, append tmpdf to the original dataset
-#             i = 0
-#             j = 0
-#             tmpdf = pd.DataFrame()
-#             col_list = ['date', 'users', 'usersNew', 'percentNewSessions', 'sessions', 'bounceRate', 'avgSessionDuration',
-#                         'pageviews', 'pageviewsPerSession', 'uniquePageviews', 'avgTimeOnPage', 'usersOld', 'sessionsNew',
-#                         'sessionsOld', 'sessionsBounce', 'sessionsNoBounce', 'date2']
-#             while j < len(dateseq):
-#                 if data.loc[i, 'date2'] == dateseq[j]:
-#                     i += 1
-#                     j += 1
-#                 else:
-#                     # Add missing row
-#                     missrow = pd.DataFrame([[int(dateseq[j].strftime('%Y%m%d')), 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, dateseq[j]]],
-#                                                columns=col_list)
-#                     tmpdf = tmpdf.append(missrow, ignore_index=True)
-#                     j += 1
-#             # Append the nissing rows to the original dataset and sort again
-#             data = data.append(tmpdf, ignore_index=True)
-#             return data.sort_values(by='date2', ascending=True).reset_index(drop=True)
-#         else:
-#             print('Complete dates')
-#             return data.reset_index(drop=True)
-#     else:
-#         print('Dataset with Channel info')
-#         print(data.shape)
-#         print(diff.days + 1)
-#         data.sort_values(by=['date2', 'channel'], inplace=True)
-#         channel_names = ['(Other)', 'Direct', 'Display', 'Email', 'Organic Search', 'Paid Search', 'Referral', 'Social']
-#         if data.shape[0] != (diff.days + 1) * len(channel_names):
-#             print('Some dates are missing!')
-#             # Create a complete sequence of dates
-#             step = dt.timedelta(days=1)
-#             dateseq = []
-#             while d1 <= d2:
-#                 dateseq.append(d1)
-#                 d1 += step
-#             # Check for missing dates and create a temporal dataframe (tmpdf) with the missing rows, filled with 0's.
-#             # Then, append tmpdf to the original dataset
-#             i = 0
-#             j = 0
-#             tmpdf = pd.DataFrame()
-#             col_list = ['date', 'channel', 'users', 'usersNew', 'percentNewSessions', 'sessions', 'bounceRate',
-#                         'avgSessionDuration',
-#                         'pageviews', 'pageviewsPerSession', 'uniquePageviews', 'avgTimeOnPage', 'usersOld',
-#                         'sessionsNew',
-#                         'sessionsOld', 'sessionsBounce', 'sessionsNoBounce', 'date2']
-#             while j < len(dateseq):
-#                 k = 0
-#                 #print('Checking channels...')
-#                 while k < len(channel_names):
-#                     if i < data.shape[0] and data.loc[i, 'date2'] == dateseq[j] and data.loc[i, 'channel'] == channel_names[k]:
-#                         #print('Channel FOUND: {} i: {} k: {}'.format(channel_names[k], i, k))
-#                         i += 1
-#                         k += 1
-#                     else:
-#                         # Add missing row
-#                         #print('Channel missing: {} i: {} k: {}'.format(channel_names[k], i, k))
-#                         missrow = pd.DataFrame(
-#                             [[int(dateseq[j].strftime('%Y%m%d')), channel_names[k], 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-#                               0, 0, 0, 0, 0, dateseq[j]]],
-#                             columns=col_list)
-#                         tmpdf = tmpdf.append(missrow, ignore_index=True)
-#                         k += 1
-#                 #print('Increase j')
-#                 j += 1
-#             # Append the nissing rows to the original dataset and sort again
-#             data = data.append(tmpdf, ignore_index=True)
-#             return data.sort_values(by=['date2', 'channel'], ascending=True).reset_index(drop=True)
-#         else:
-#             print('Complete dates')
-#             return data.reset_index(drop=True)
 
 
 def read_ga_data(filename):
@@ -142,7 +52,6 @@ def read_ga_data(filename):
         # Rename column
         data.rename(columns={'ga:channelGrouping': 'channel'}, inplace=True)
         # Create dataframes for each channel, complete separatetly and then concatenate in one final dataset
-        channels = ['(Other)', 'Direct', 'Display', 'Email', 'Organic Search', 'Paid Search', 'Referral', 'Social']
         tmp = pd.DataFrame(columns=data.columns)
         mindate = min(data.index)
         maxdate = max(data.index)
@@ -176,36 +85,6 @@ def read_ga_data(filename):
     else:
         #
         data = data.asfreq('D', fill_value=0)
-
-    # print('Reading dataset...')
-    # data = pandas.read_csv(filename, encoding='utf_16_le', sep='\t')
-    # # Define better column names
-    # data.rename(columns={'ga:date': 'date',
-    #                      'ga:users': 'users',
-    #                      'ga:newUsers': 'usersNew',
-    #                      'ga:percentNewSessions': 'percentNewSessions',
-    #                      'ga:sessions': 'sessions',
-    #                      'ga:bounceRate': 'bounceRate',
-    #                      'ga:avgSessionDuration': 'avgSessionDuration',
-    #                      'ga:pageviews': 'pageviews',
-    #                      'ga:pageviewsPerSession': 'pageviewsPerSession',
-    #                      'ga:uniquePageviews': 'uniquePageviews',
-    #                      'ga:avgTimeOnPage': 'avgTimeOnPage'}, inplace=True)
-    # if channels:
-    #     data.rename(columns={'ga:channelGrouping': 'channel'}, inplace=True)
-    # # Correct percentage
-    # data['percentNewSessions'] = data['percentNewSessions'] / 100
-    # data['bounceRate'] = data['bounceRate'] / 100
-    # # Derive new columns
-    # data['usersOld'] = data['users'] - data['usersNew']
-    # data['sessionsNew'] = data['sessions'] * data['percentNewSessions']
-    # data['sessionsOld'] = data['sessions'] * (1 - data['percentNewSessions'])
-    # data['sessionsBounce'] = data['sessions'] * data['bounceRate']
-    # data['sessionsNoBounce'] = data['sessions'] * (1 - data['bounceRate'])
-    # # Create date object column and sort the dataframe by date
-    # data['date2'] = [dt.datetime.strptime(d, '%Y%m%d') for d in data['date'].astype('str')]
-    # # Check and complete range of days if necessary.
-    # data = complete_dates(data, channels)
     return data
 
 
@@ -233,10 +112,6 @@ def plot_gametrics(dataset, metricname):
 
 # Correlation test functions
 
-metric_list = ['users', 'usersNew', 'usersOld', 'sessions', 'sessionsNew', 'sessionsOld', 'sessionsBounce',
-               'sessionsNoBounce', 'avgSessionDuration', 'pageviews', 'pageviewsPerSession', 'uniquePageviews',
-               'avgTimeOnPage']
-
 def get_correlations_matrix(vsdf, gadf, maxlag):
     """
     Returns a matrix where the rows are the GA metrics and the column are the correlation value at each lag point
@@ -246,9 +121,6 @@ def get_correlations_matrix(vsdf, gadf, maxlag):
     """
     # For each metric in GA metrics
     corr_dict = dict()
-    # print(vsdf.shape)
-    # print(vsdf.index[0])
-    # print(vsdf.index[-1])
     for metric in metric_list:
         gametric = gadf[metric]
         corr_list = []
@@ -257,20 +129,9 @@ def get_correlations_matrix(vsdf, gadf, maxlag):
             # Set range dates based on lag, lag 0 means GA metrics have the same dates as Visitors
             inilag = maxlag - lag
             endlag = -(lag)
-            #print(lag)
-            #endlag = -(maxlag-lag)
-            # Get the correlation for each lag and store it in a list
             if endlag:
-                # print(gametric[inilag:endlag].shape)
-                # print(gametric[inilag:endlag].index[0])
-                # print(gametric[inilag:endlag].index[-1])
-                # print(vsdf.visitors.corr(gametric[inilag:endlag], method='pearson'))
                 corr_list.append(vsdf.visitors.corr(gametric[lag:endlag], method='pearson'))
             else:
-                # print(gametric[inilag:].shape)
-                # print(gametric[inilag:].index[0])
-                # print(gametric[inilag:].index[-1])
-                # print(vsdf.visitors.corr(gametric[inilag:], method='pearson'))
                 corr_list.append(vsdf.visitors.corr(gametric[lag:], method='pearson'))
         # print(len(corr_list))
         corr_dict[metric] = corr_list
@@ -309,7 +170,10 @@ def moving_average(df, window = 7):
     :param window: Number of dates to calculate the moving avergae
     :return: A dataframe with the moving average values
     """
-    return df.rolling(window).mean().dropna()
+    if 'channel' in df.columns:
+        return df.drop(columns=['channel']).rolling(window).mean().dropna()
+    else:
+        return df.rolling(window).mean().dropna()
 
 
 def log_values(df):
@@ -319,9 +183,9 @@ def log_values(df):
         for metric in metric_list:
             tmp.loc[:, metric] = np.log(df.loc[:, metric])
             # print(df[metric])
-        return tmp
+        return tmp.replace(to_replace=-math.inf, value=0)
     else:
-        return df.apply(np.log, axis=1)
+        return df.apply(np.log, axis=1).replace(to_replace=-math.inf, value=0)
     # return df.apply(lambda x: np.log(x) if x.isdigit() else x)
 
 
@@ -356,20 +220,22 @@ def run_correlation_tests(vsdf, gadf, maxlag, dataname):
     tmp = get_max_correlations(get_correlations_matrix(vsdf, moving_average(gadf), maxlag),
                                colnames=['metric3', 'corr3', 'lag3'])
     max_corrs = pd.concat([max_corrs, tmp], axis=1)
+
     # 4) Unchanged Visitors & Moving average Log GA
     tmp = get_max_correlations(get_correlations_matrix(vsdf, moving_average(log_values(gadf)), maxlag),
                                colnames=['metric4', 'corr4', 'lag4'])
     max_corrs = pd.concat([max_corrs, tmp], axis=1)
+
     # 5) Moving average Visitors & Moving average GA
     tmp = get_max_correlations(get_correlations_matrix(moving_average(vsdf), moving_average(gadf), maxlag),
                                colnames=['metric5', 'corr5', 'lag5'])
     max_corrs = pd.concat([max_corrs, tmp], axis=1)
+
     # 6) Moving average Visitors & Moving average Log GA
     tmp = get_max_correlations(get_correlations_matrix(moving_average(vsdf), moving_average(log_values(gadf)), maxlag),
                                colnames=['metric6', 'corr6', 'lag6'])
     max_corrs = pd.concat([max_corrs, tmp], axis=1)
+
     # Add dataname column
     max_corrs['dataname'] = dataname
     return max_corrs.drop(columns=['metric2', 'metric3', 'metric4', 'metric5', 'metric6'])
-
-
